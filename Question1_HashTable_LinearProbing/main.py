@@ -8,6 +8,7 @@ import random
 import time
 import csv
 import sys
+import matplotlib.pyplot as plt
 
 DELETED = object()
 
@@ -127,9 +128,40 @@ def sample_data():
     return [Medicine(mid, name, cat, price, qty) for mid, (name, cat, price, qty) in zip(fixed_ids, data)]
 
 def build_table():
-    ht = LinearProbingHashTable(size=23)
-    for med in sample_data():
-        ht.insert(med)
+    ht = LinearProbingHashTable(size=307)   # Prime number > 150
+    used_ids = set()
+
+    categories = [
+        "Tablet",
+        "Capsule",
+        "Syrup",
+        "Cream",
+        "Drops",
+        "Supplement",
+        "Spray"
+    ]
+
+    medicine_names = [
+        "Paracetamol", "Ibuprofen", "Amoxicillin", "Cetirizine",
+        "Vitamin C", "Vitamin D", "Fish Oil", "Calcium",
+        "Antacid", "Cough Syrup", "Eye Drops", "Nasal Spray",
+        "Aspirin", "Diclofenac", "Omeprazole", "Loratadine",
+        "Probiotic", "Insulin", "Salbutamol", "Hydrocortisone"
+    ]
+
+    for i in range(150):
+        mid = generate_id(used_ids)
+
+        medicine = Medicine(
+            medicine_id=mid,
+            name=f"{random.choice(medicine_names)} {i+1}",
+            category=random.choice(categories),
+            price=round(random.uniform(5.0, 80.0), 2),
+            quantity=random.randint(20, 500)
+        )
+
+        ht.insert(medicine)
+
     return ht
 
 def linear_search(array, medicine_id: str):
@@ -141,21 +173,78 @@ def linear_search(array, medicine_id: str):
 def compare_performance(rounds=2000):
     ht = build_table()
     array = ht.records()
-    existing_keys = [array[0].medicine_id, array[len(array)//2].medicine_id, array[-1].medicine_id]
-    missing_keys = ["M99991", "M99992", "M99993"]
+
+    # Pick 5 existing keys from different positions in the array
+    existing_keys = [
+        array[0].medicine_id,
+        array[len(array) // 4].medicine_id,
+        array[len(array) // 2].medicine_id,
+        array[(len(array) * 3) // 4].medicine_id,
+        array[-1].medicine_id
+    ]
+
+    # 5 non-existing keys for unsuccessful search testing
+    missing_keys = [
+        "M99991",
+        "M99992",
+        "M99993",
+        "M99994",
+        "M99995"
+    ]
+
     keys = existing_keys + missing_keys
     results = []
+
     for key in keys:
         start = time.perf_counter_ns()
         for _ in range(rounds):
             ht.search(key)
         hash_time = (time.perf_counter_ns() - start) / rounds
+
         start = time.perf_counter_ns()
         for _ in range(rounds):
             linear_search(array, key)
         array_time = (time.perf_counter_ns() - start) / rounds
-        results.append((key, "Existing" if key in existing_keys else "Missing", hash_time, array_time))
+
+        status = "Existing" if key in existing_keys else "Missing"
+        results.append((key, status, hash_time, array_time))
+
     return results
+
+def draw_performance_graph():
+    rows = compare_performance(rounds=2000)
+
+    keys = [row[0] for row in rows]
+    hash_times = [row[2] for row in rows]
+    array_times = [row[3] for row in rows]
+
+    x = range(len(keys))
+    width = 0.35
+
+    plt.figure(figsize=(11, 6))
+
+    plt.bar(
+        [i - width / 2 for i in x],
+        hash_times,
+        width,
+        label="Hash Table"
+    )
+
+    plt.bar(
+        [i + width / 2 for i in x],
+        array_times,
+        width,
+        label="Array"
+    )
+
+    plt.title("Search Performance Comparison: Hash Table vs Array")
+    plt.xlabel("Medicine ID")
+    plt.ylabel("Average Execution Time (ns)")
+    plt.xticks(list(x), keys, rotation=45)
+    plt.legend()
+    plt.grid(axis="y", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
 
 def insert_flow(ht, used_ids):
     name = input("Enter medicine name: ")
@@ -202,6 +291,7 @@ def menu():
             print("Key       Type      HashTable(ns)   Array(ns)")
             for row in compare_performance():
                 print(f"{row[0]:<9} {row[1]:<9} {row[2]:>12.2f} {row[3]:>10.2f}")
+            draw_performance_graph()
         elif choice == "7": print("Exported to", ht.export_csv())
         elif choice == "0": break
         else: print("Invalid choice")
@@ -217,6 +307,8 @@ def demo():
     print("Key       Type      HashTable(ns)   Array(ns)")
     for row in compare_performance(rounds=1000):
         print(f"{row[0]:<9} {row[1]:<9} {row[2]:>12.2f} {row[3]:>10.2f}")
+
+    draw_performance_graph()
 
 if __name__ == "__main__":
     if "--demo" in sys.argv:
