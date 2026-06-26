@@ -30,6 +30,9 @@ class LinearProbingHashTable:
         self.table = [None] * size
         self.count = 0
 
+    def load_factor(self):
+        return self.count / self.size
+
     def hash_function(self, key: str) -> int:
         numeric = int(key[1:])
         return numeric % self.size
@@ -91,6 +94,11 @@ class LinearProbingHashTable:
         return [item for item in self.table if item not in (None, DELETED)]
 
     def display_table(self):
+        print(f"Hash Table Size : {self.size}")
+        print(f"Total Medicines : {self.count}")
+        print(f"Load Factor     : {self.load_factor():.2f}")
+        print("-" * 60)
+
         for i, item in enumerate(self.table):
             if item is None:
                 print(f"Slot {i:03}: EMPTY")
@@ -161,7 +169,6 @@ def build_table():
         )
 
         ht.insert(medicine)
-
 
     return ht
 
@@ -299,11 +306,10 @@ def menu():
 
 def demo():
     ht = build_table()
-    print("Sample pharmacy hash table created with", len(ht.records()), "records.")
-    print("\nSearch existing M12045:")
-    print(ht.search("M12045"))
-    print("\nSearch missing M99999:")
-    print(ht.search("M99999") or "Medicine not found")
+    print("Sample pharmacy hash table created.")
+    print(f"Hash Table Size : {ht.size}")
+    print(f"Total Medicines : {ht.count}")
+    print(f"Load Factor     : {ht.load_factor():.2f}")
     print("\nPerformance comparison:")
     print("Key       Type      HashTable(ns)   Array(ns)")
     for row in compare_performance(rounds=1000):
