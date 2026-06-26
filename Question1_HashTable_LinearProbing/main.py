@@ -162,6 +162,7 @@ def build_table():
 
         ht.insert(medicine)
 
+
     return ht
 
 def linear_search(array, medicine_id: str):
